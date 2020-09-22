@@ -155,7 +155,7 @@ void initGame(void)
   gl_game.tick = 0;
   gl_game.score = 0;
   drawScore();
-  gl_game.mode = MODE_CTRL;
+  gl_game.mode = MODE_INIT;
 }
 
 int chkCollision(short idx, short x, short y){
@@ -164,7 +164,7 @@ int chkCollision(short idx, short x, short y){
     short y2 = idx/COLMAX;
     short x2 = get_posx(idx%COLMAX, y2) + HALFBBLSIZE;
     y2 = y2 * RAWSIZE + HALFBBLSIZE;
-    if(((x-x2)*(x-x2)+(y-y2)*(y-y2)) < 60){return 1;}
+    if(((x-x2)*(x-x2)+(y-y2)*(y-y2)) < 90){return 1;}
     return 0;
 }
 
@@ -177,7 +177,7 @@ int chkFixed(short x, short y)
     if(posy <= 0){return 1;}
     
     if((posy & 1) != gl_game.firstcol8){
-        posx = (x + (BBLSIZE - MARGIN_COL7))/BBLSIZE;
+        posx = (x + HALFBBLSIZE)/BBLSIZE;
         if(posx < 1){posx = 1;}
         if(posx > (COLMAX-1)){posx=(COLMAX-1);}
         idx = posx + (posy-1)*COLMAX;
@@ -300,7 +300,7 @@ int moveBubble(void){
 	if(chkFixed(nx + HALFBBLSIZE, ny + HALFBBLSIZE) ){
         y = (short)((ny + HALFBBLSIZE)/RAWSIZE);
         if((y & 1) != gl_game.firstcol8){
-          x = (short)((nx + (BBLSIZE - MARGIN_COL7) + HALFBBLSIZE)/BBLSIZE);
+          x = (short)((nx + BBLSIZE)/BBLSIZE);
           if(x < 1){x = 1;}
         }
         else{x = (short)((nx + HALFBBLSIZE)/BBLSIZE);}
@@ -439,7 +439,7 @@ void getInput(void)
   if(gl_game.mode != MODE_CTRL){return;}  
   ctrlLauncher();
   // fire !
-  if(M5.BtnA.isPressed()){
+  if(digitalRead(M5_BUTTON_HOME) == LOW){
     gl_currentBBL.kind = gl_game.nxtBBL;
     gl_currentBBL.posX = STARTX;
     gl_currentBBL.posY = STARTY;
@@ -487,15 +487,12 @@ void gamelose()
   }
   lcd.setCursor(5, 52);
   lcd.print(" GAME OVER ");
-  M5.update();
   delay(1000);
   for(;;){
-    if(M5.BtnA.isPressed()){break;}
-    M5.update();
+    if(digitalRead(M5_BUTTON_HOME) == LOW){break;}
     delay(100);
   }
   initGame();
-  M5.update();
 }
 
 void gameloop()
@@ -505,6 +502,14 @@ void gameloop()
   drawFixedBubble();
   drawBubble(STARTX, STARTY, gl_game.nxtBBL);
   switch(gl_game.mode){
+  case MODE_INIT:
+    sprite.pushSprite(0, 30);
+    lcd.setCursor(20, 80);
+    lcd.print("G O !");
+    delay(1000);
+    gl_game.mode = MODE_CTRL;
+    break;
+
   case MODE_FIRE:
     switch(moveBubble()){
     case 0: drawBubble(gl_currentBBL.posX, gl_currentBBL.posY, gl_currentBBL.kind); break;
@@ -550,7 +555,7 @@ void loop(void)
   sprite.fillRect(0, 0, BGWIDTH, BGHEIGHT, 0);
   gameloop();
   sprite.pushSprite(0, 30);
-  M5.update();
   if(chkGameLose()){gamelose();}
-  delay(20);  
+  delay(30);
+  M5.update();
 }
